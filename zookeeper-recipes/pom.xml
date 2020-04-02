@@ -77,7 +77,7 @@
     <dependency>
       <groupId>org.xerial.snappy</groupId>
       <artifactId>snappy-java</artifactId>
-      <scope>test</scope>
+      <version>1.1.7.3</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -87,7 +87,7 @@
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
-      <scope>test</scope>
+      <version>4.1.0</version>
     </dependency>
     <dependency>
       <groupId>com.github.spotbugs</groupId>

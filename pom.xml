@@ -336,7 +336,7 @@
     <bouncycastle.version>1.60</bouncycastle.version>
     <commons-collections.version>3.2.2</commons-collections.version>
     <commons-lang.version>2.6</commons-lang.version>
-    <dropwizard.version>3.2.5</dropwizard.version>
+<!--    <dropwizard.version>4.0.7</dropwizard.version>-->
     <spotbugsannotations.version>3.1.9</spotbugsannotations.version>
     <checkstyle.version>8.17</checkstyle.version>
 
@@ -469,17 +469,17 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
-        <version>${jetty.version}</version>
+        <version>9.4.27.v20200227</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlet</artifactId>
-        <version>${jetty.version}</version>
+        <version>9.4.27.v20200227</version>
       </dependency>
       <dependency>
-        <groupId>io.dropwizard.metrics</groupId>
-        <artifactId>metrics-core</artifactId>
-        <version>${dropwizard.version}</version>
+          <groupId>io.dropwizard.metrics</groupId>
+          <artifactId>metrics-core</artifactId>
+          <version>4.1.0</version>
         <exclusions>
            <exclusion>
               <groupId>org.slf4j</groupId>
@@ -518,7 +518,7 @@
       <dependency>
         <groupId>org.xerial.snappy</groupId>
         <artifactId>snappy-java</artifactId>
-        <version>${snappy.version}</version>
+        <version>1.1.7.3</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
