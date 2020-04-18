@@ -74,6 +74,12 @@ public class ResponseCache {
         return cacheSize > 0;
     }
 
+    /**
+     * 此类并不是真正意义上的 LRU，因为传统的 LRU 是按照时间访问的顺序把节点放到最前的。而这个是按照插入顺序，
+     * 意味着如果是满的情况下，多余 size 的话会将最开始插入的节点去掉。
+     * @param <K>
+     * @param <V>
+     */
     private static class LRUCache<K, V> extends LinkedHashMap<K, V> {
 
         private int cacheSize;
