@@ -27,6 +27,9 @@ import org.apache.yetus.audience.InterfaceAudience;
  * events by registering a callback object with the client. The callback object
  * is expected to be an instance of a class that implements Watcher interface.
  *
+ * 此接口指定事件处理程序类必须实现的公共接口。 ZooKeeper客户端将从与其连接的ZooKeeper服务器获取各种事件。
+ * 使用此类客户端的应用程序通过向客户端注册回调对象来处理这些事件。 回调对象应该是实现Watcher接口的类的实例。
+ *
  */
 @InterfaceAudience.Public
 public interface Watcher {
