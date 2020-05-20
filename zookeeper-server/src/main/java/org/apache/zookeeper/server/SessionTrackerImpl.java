@@ -83,6 +83,7 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
     }
 
     /**
+     * 生成初始sessionId。 高位1个字节是serverId，后5个字节是时间戳，低位2个字节是0s。 使用“ >>> 8”，而不是“ >> 8”，以确保高位1字节完全取决于服务器ID
      * Generates an initial sessionId. High order 1 byte is serverId, next
      * 5 bytes are from timestamp, and low order 2 bytes are 0s.
      * Use ">>> 8", not ">> 8" to make sure that the high order 1 byte is entirely up to the server Id(@see ZOOKEEPER-1622).

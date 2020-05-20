@@ -118,6 +118,7 @@ public class FinalRequestProcessor implements RequestProcessor {
             ZooTrace.logRequest(LOG, traceMask, 'E', request, "");
         }
 
+        // 这边主要处理节点的，注册删除节点啥的，并且会触发 watcher 通知
         ProcessTxnResult rc = zks.processTxn(request);
 
         // ZOOKEEPER-558:

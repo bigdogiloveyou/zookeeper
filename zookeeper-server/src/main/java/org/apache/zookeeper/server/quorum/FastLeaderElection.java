@@ -116,27 +116,33 @@ public class FastLeaderElection implements Election {
 
         /*
          * Proposed leader
+         * 被推选的 leader 的 id
          */ long leader;
 
         /*
          * zxid of the proposed leader
+         * 被推选的 leader 的事务 id
          */ long zxid;
 
         /*
          * Epoch
+         * 推选者的选举周期
          */ long electionEpoch;
 
         /*
          * current state of sender
+         * 推选者的状态
          */ QuorumPeer.ServerState state;
 
         /*
          * Address of sender
+         * 推选者的id
          */ long sid;
 
         QuorumVerifier qv;
         /*
          * epoch of the proposed leader
+         * 被推选者的选举周期
          */ long peerEpoch;
 
     }
@@ -909,6 +915,8 @@ public class FastLeaderElection implements Election {
              * The votes from the current leader election are stored in recvset. In other words, a vote v is in recvset
              * if v.electionEpoch == logicalclock. The current participant uses recvset to deduce on whether a majority
              * of participants has voted for it.
+             *
+             * recvset 用于记录当前服务器在本轮次的 Leader 选举中收到的所有外部投票
              */
             Map<Long, Vote> recvset = new HashMap<Long, Vote>();
 
@@ -924,7 +932,9 @@ public class FastLeaderElection implements Election {
             int notTimeout = minNotificationInterval;
 
             synchronized (this) {
+                // 更新逻辑时钟，每进行一轮选举，都需要更新逻辑时钟
                 logicalclock.incrementAndGet();
+                // 更新选票
                 updateProposal(getInitId(), getInitLastLoggedZxid(), getPeerEpoch());
             }
 
@@ -1012,6 +1022,7 @@ public class FastLeaderElection implements Election {
 
                         voteSet = getVoteTracker(recvset, new Vote(proposedLeader, proposedZxid, logicalclock.get(), proposedEpoch));
 
+                        // 投票得到大多数人同意，超过 1/2
                         if (voteSet.hasAllQuorums()) {
 
                             // Verify if there is any change in the proposed leader
@@ -1064,13 +1075,19 @@ public class FastLeaderElection implements Election {
                         outofelection.put(n.sid, new Vote(n.version, n.leader, n.zxid, n.electionEpoch, n.peerEpoch, n.state));
                         voteSet = getVoteTracker(outofelection, new Vote(n.version, n.leader, n.zxid, n.electionEpoch, n.peerEpoch, n.state));
 
+                        // 已经完成了leader选举
                         if (voteSet.hasAllQuorums() && checkLeader(outofelection, n.leader, n.electionEpoch)) {
                             synchronized (this) {
+                                // 设置逻辑时钟
                                 logicalclock.set(n.electionEpoch);
+                                // 设置状态
                                 setPeerState(n.leader, voteSet);
                             }
+                            // 最终选票
                             Vote endVote = new Vote(n.leader, n.zxid, n.electionEpoch, n.peerEpoch);
+                            // 清空recvqueue队列的选票
                             leaveInstance(endVote);
+                            // 返回选票
                             return endVote;
                         }
                         break;
