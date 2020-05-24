@@ -153,21 +153,32 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
     protected ZooKeeperServerBean jmxServerBean;
     protected DataTreeBean jmxDataTreeBean;
 
+    // 默认心跳频率
     public static final int DEFAULT_TICK_TIME = 3000;
     protected int tickTime = DEFAULT_TICK_TIME;
     /** value of -1 indicates unset, use default */
+    // 最小会话过期时间
     protected int minSessionTimeout = -1;
     /** value of -1 indicates unset, use default */
+    // 最大会话过期时间
     protected int maxSessionTimeout = -1;
     /** Socket listen backlog. Value of -1 indicates unset */
     protected int listenBacklog = -1;
+
+    // 会话跟踪器
     protected SessionTracker sessionTracker;
+
+    // 事务日志快照
     private FileTxnSnapLog txnLogFactory = null;
+
+    // Zookeeper内存数据库
     private ZKDatabase zkDb;
     private ResponseCache readResponseCache;
     private ResponseCache getChildrenResponseCache;
     private final AtomicLong hzxid = new AtomicLong(0);
     public static final Exception ok = new Exception("No prob");
+
+    // 请求处理器
     protected RequestProcessor firstProcessor;
     protected JvmPauseMonitor jvmPauseMonitor;
     protected volatile State state = State.INITIAL;
@@ -193,10 +204,15 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
     private static final long superSecret = 0XB3415C00L;
 
     private final AtomicInteger requestsInProcess = new AtomicInteger(0);
+
+    // 未处理的ChangeRecord
     final Deque<ChangeRecord> outstandingChanges = new ArrayDeque<>();
+
     // this data structure must be accessed under the outstandingChanges lock
+    // 记录path对应的ChangeRecord
     final Map<String, ChangeRecord> outstandingChangesForPath = new HashMap<String, ChangeRecord>();
 
+    // 连接工厂
     protected ServerCnxnFactory serverCnxnFactory;
     protected ServerCnxnFactory secureServerCnxnFactory;
 
@@ -461,6 +477,8 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
      */
     public void loadData() throws IOException, InterruptedException {
         /*
+         * 在 zk 选举之前就已经进行初始化
+         *
          * When a new leader starts executing Leader#lead, it
          * invokes this method. The database, however, has been
          * initialized before running leader election so that
@@ -890,6 +908,9 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
     /**
      * This structure is used to facilitate information sharing between PrepRP
      * and FinalRP.
+     *
+     * ChangeRecord数据结构是用于方便PrepRequestProcessor和FinalRequestProcessor之间进行信息共享，
+     * 其包含了一个拷贝方法duplicate，用于返回属性相同的ChangeRecord实例
      */
     static class ChangeRecord {
         PrecalculatedDigest precalculatedDigest;
@@ -1531,6 +1552,16 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         }
     }
 
+    /**
+     * 该函数首先将传递的ByteBuffer进行反序列，转化为相应的RequestHeader，然后根据该RequestHeader判断是否需要认证，
+     * 若认证失败，则构造认证失败的响应并发送给客户端，然后关闭连接，并且不在接收任何packet。
+     * 若认证成功，则构造认证成功的响应并发送给客户端。若不需要认证，则再判断其是否为SASL类型，
+     * 若是，则进行处理，然后构造响应并发送给客户端，否则，构造请求并且提交请求。
+     *
+     * @param cnxn
+     * @param incomingBuffer
+     * @throws IOException
+     */
     public void processPacket(ServerCnxn cnxn, ByteBuffer incomingBuffer) throws IOException {
         // We have the request, now process and setup for next
         InputStream bais = new ByteBufferInputStream(incomingBuffer);

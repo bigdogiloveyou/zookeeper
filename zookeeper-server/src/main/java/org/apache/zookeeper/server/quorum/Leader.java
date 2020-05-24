@@ -770,6 +770,8 @@ public class Leader extends LearnerMaster {
                     }
                     tickSkip = !tickSkip;
                 }
+
+                // 针对每一个 follower/observer 发送 ping 心跳
                 for (LearnerHandler f : getLearners()) {
                     f.ping();
                 }

@@ -24,6 +24,9 @@ import org.apache.zookeeper.server.ZooKeeperCriticalThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * follower 跟 observer 都会使用的发送 packet 到 leader 的线程。
+ */
 public class LearnerSender extends ZooKeeperCriticalThread {
     private static final Logger LOG = LoggerFactory.getLogger(LearnerSender.class);
 
@@ -52,6 +55,7 @@ public class LearnerSender extends ZooKeeperCriticalThread {
                     break;
                 }
 
+                // 需要发送的 type 保存在 messageTracker 的 circleQueue 中
                 learner.messageTracker.trackSent(p.getType());
                 learner.leaderOs.writeRecord(p, "packet");
             } catch (IOException e) {

@@ -68,6 +68,8 @@ public class Follower extends Learner {
      * @throws InterruptedException
      */
     void followLeader() throws InterruptedException {
+
+        // 1、定义选举结束时间、选举时间间隔
         self.end_fle = Time.currentElapsedTime();
         long electionTimeTaken = self.end_fle - self.start_fle;
         self.setElectionTimeTaken(electionTimeTaken);
@@ -81,15 +83,21 @@ public class Follower extends Learner {
         boolean completedSync = false;
 
         try {
+            // 集群中非主节点的数据都是 copy 主节点的数据的，所以刚成为 follower 的时候，db 的状态为 DISCOVERY
             self.setZabState(QuorumPeer.ZabState.DISCOVERY);
+
+            // 2、首先找到 leader，然后 connectToLeader()、registerWithLeader()、syncWithLeader()
             QuorumServer leaderServer = findLeader();
             try {
                 connectToLeader(leaderServer.addr, leaderServer.hostname);
                 connectionTime = System.currentTimeMillis();
+
+                // 2.1 向 leader 注册自己
                 long newEpochZxid = registerWithLeader(Leader.FOLLOWERINFO);
                 if (self.isReconfigStateChange()) {
                     throw new Exception("learned about role change");
                 }
+
                 //check to see if the leader zxid is lower than ours
                 //this should never happen but is just a safety check
                 long newEpoch = ZxidUtils.getEpochFromZxid(newEpochZxid);
@@ -104,6 +112,8 @@ public class Follower extends Learner {
                 try {
                     self.setLeaderAddressAndId(leaderServer.addr, leaderServer.getId());
                     self.setZabState(QuorumPeer.ZabState.SYNCHRONIZATION);
+
+                    // 同步 leader 的事务日志
                     syncWithLeader(newEpochZxid);
                     self.setZabState(QuorumPeer.ZabState.BROADCAST);
                     completedSync = true;
@@ -119,7 +129,8 @@ public class Follower extends Learner {
                 } else {
                     om = null;
                 }
-                // create a reusable packet to reduce gc impact
+                // create a reusable packet to reduce gc impact（创建可重用的数据包以减少gc的影响）
+                // 在 while 循环中不断接收来自 leader 的请求并处理
                 QuorumPacket qp = new QuorumPacket();
                 while (this.isRunning()) {
                     readPacket(qp);
@@ -152,15 +163,17 @@ public class Follower extends Learner {
 
     /**
      * Examine the packet received in qp and dispatch based on its contents.
+     *
+     * 根据 packet 的类型进行处理
      * @param qp
      * @throws IOException
      */
     protected void processPacket(QuorumPacket qp) throws Exception {
         switch (qp.getType()) {
-        case Leader.PING:
+        case Leader.PING: // ping 💗
             ping(qp);
             break;
-        case Leader.PROPOSAL:
+        case Leader.PROPOSAL: // 事务请求
             ServerMetrics.getMetrics().LEARNER_PROPOSAL_RECEIVED_COUNT.add(1);
             TxnLogEntry logEntry = SerializeUtils.deserializeTxn(qp.getData());
             TxnHeader hdr = logEntry.getHeader();
@@ -199,7 +212,7 @@ public class Follower extends Learner {
                 ServerMetrics.getMetrics().OM_PROPOSAL_PROCESS_TIME.add(Time.currentElapsedTime() - startTime);
             }
             break;
-        case Leader.COMMIT:
+        case Leader.COMMIT: // 提交事务请求
             ServerMetrics.getMetrics().LEARNER_COMMIT_RECEIVED_COUNT.add(1);
             fzk.commit(qp.getZxid());
             if (om != null) {

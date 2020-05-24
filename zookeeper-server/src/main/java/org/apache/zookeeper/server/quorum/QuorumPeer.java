@@ -199,6 +199,9 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         LOG.info("multiAddress.reachabilityCheckEnabled set to {}", multiAddressReachabilityCheckEnabled);
     }
 
+    /**
+     * 这个类代表一个 leader？
+     */
     public static class QuorumServer {
 
         public MultipleAddresses addr = new MultipleAddresses();
@@ -485,6 +488,8 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     /**
      * (Used for monitoring) shows the current phase of
      * Zab protocol that peer is running.
+     *
+     * 此状态是用来表示 zk 选举的时候，db 所经历的状态
      */
     public enum ZabState {
         ELECTION,

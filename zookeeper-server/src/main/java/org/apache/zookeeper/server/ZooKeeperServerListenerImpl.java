@@ -41,6 +41,7 @@ class ZooKeeperServerListenerImpl implements ZooKeeperServerListener {
     @Override
     public void notifyStopping(String threadName, int exitCode) {
         LOG.info("Thread {} exits, error code {}", threadName, exitCode);
+        // 只是更改状态，但是 zk server 那边会根据状态退出线程
         zkServer.setState(State.ERROR);
     }
 

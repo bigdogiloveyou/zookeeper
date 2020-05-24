@@ -1050,6 +1050,8 @@ public class FastLeaderElection implements Election {
                         break;
                     case FOLLOWING:
                     case LEADING:
+                        // 出现 FOLLOWING 或者 LEADING 是因为集群本来就存在 leader，然后一台新的机器启动加入集群中，收到集群中其他机器
+                        // 的回应时，如果时钟相同，直接把自己设置为 follower 或者 observer；如果不同那就先设置时钟，再把自己设置为 follower 或者 observer
                         /*
                          * Consider all notifications from the same epoch
                          * together.

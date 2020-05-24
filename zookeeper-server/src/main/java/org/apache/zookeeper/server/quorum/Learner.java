@@ -68,6 +68,9 @@ import org.slf4j.LoggerFactory;
  * This class is the superclass of two of the three main actors in a ZK
  * ensemble: Followers and Observers. Both Followers and Observers share
  * a good deal of code which is moved into Peer to avoid duplication.
+ *
+ * leader 主要就做了两件事：1、创建线程连接 leader。2、定义了 follower 跟 leader
+ * 都公用的 connectToLeader()、registerWithLeader()、syncWithLeader() 代码
  */
 public class Learner {
 
@@ -172,6 +175,8 @@ public class Learner {
      * When packets are sent asynchronously, sender.queuePacket() is called, which writes to a BlockingQueue, which is thread-safe.
      * Reading from this BlockingQueue and writing to leaderOs is the learner sender thread only.
      * So we have only one thread writing to leaderOs at a time in either case.
+     *
+     * 被很多线程调用，所以要防止多线程问题
      *
      * @param pp
      *                the proposal packet to be sent to the leader
@@ -343,6 +348,9 @@ public class Learner {
         }
     }
 
+    /**
+     * 主要用来连接 leader
+     */
     class LeaderConnector implements Runnable {
 
         private AtomicReference<Socket> socket;
@@ -377,6 +385,13 @@ public class Learner {
             }
         }
 
+        /**
+         * 连接 leader
+         * @return
+         * @throws IOException
+         * @throws X509Exception
+         * @throws InterruptedException
+         */
         private Socket connectToLeader() throws IOException, X509Exception, InterruptedException {
             Socket sock = createSocket();
 
@@ -392,6 +407,7 @@ public class Learner {
             int remainingTimeout;
             long startNanoTime = nanoTime();
 
+            // 重试5次
             for (int tries = 0; tries < 5 && socket.get() == null; tries++) {
                 try {
                     // recalculate the init limit time because retries sleep for 1000 milliseconds
@@ -461,13 +477,15 @@ public class Learner {
     /**
      * Once connected to the leader or learner master, perform the handshake
      * protocol to establish a following / observing connection.
+     *
+     *
      * @param pktType
      * @return the zxid the Leader sends for synchronization purposes.
      * @throws IOException
      */
     protected long registerWithLeader(int pktType) throws IOException {
         /*
-         * Send follower info, including last zxid and sid
+         * Send follower info, including last zxid and sid（发送 follower 的 zxid、sid）
          */
         long lastLoggedZxid = self.getLastLoggedZxid();
         QuorumPacket qp = new QuorumPacket();
@@ -543,11 +561,11 @@ public class Learner {
         Deque<Long> packetsCommitted = new ArrayDeque<>();
         Deque<PacketInFlight> packetsNotCommitted = new ArrayDeque<>();
         synchronized (zk) {
-            if (qp.getType() == Leader.DIFF) {
+            if (qp.getType() == Leader.DIFF) { // 就是 follower 缺少了 leader 的一些事务日志，只需要补充缺失的
                 LOG.info("Getting a diff from the leader 0x{}", Long.toHexString(qp.getZxid()));
                 self.setSyncMode(QuorumPeer.SyncMode.DIFF);
                 snapshotNeeded = false;
-            } else if (qp.getType() == Leader.SNAP) {
+            } else if (qp.getType() == Leader.SNAP) { // follower 同步 leader 所有的事务日志
                 self.setSyncMode(QuorumPeer.SyncMode.SNAP);
                 LOG.info("Getting a snapshot from leader 0x{}", Long.toHexString(qp.getZxid()));
                 // The leader is going to dump the database
@@ -569,7 +587,7 @@ public class Learner {
 
                 // immediately persist the latest snapshot when there is txn log gap
                 syncSnapshot = true;
-            } else if (qp.getType() == Leader.TRUNC) {
+            } else if (qp.getType() == Leader.TRUNC) { // follower 比 leader 超前了，回滚自己的事务日志
                 //we need to truncate the log to the lastzxid of the leader
                 self.setSyncMode(QuorumPeer.SyncMode.TRUNC);
                 LOG.warn("Truncating log to get in sync with the leader 0x{}", Long.toHexString(qp.getZxid()));
